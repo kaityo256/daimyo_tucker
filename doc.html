@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="pandoc">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+
+<style>
+    .btn-square {
+      display: inline-block;
+      padding: 0.5em 0.5em;
+      text-decoration: none;
+      background: #668ad8;
+      color: #FFF;
+      border-bottom: solid 4px #626295;
+      border-radius: 5px;
+    }
+
+    .btn-square:active {
+      -webkit-transform: translateY(4px);
+      transform: translateY(4px);
+      border-bottom: none;
+    }
+  .markdown-body {
+    box-sizing: border-box;
+    min-width: 200px;
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 45px;
+  }
+  p.caption{
+    display:none;
+  }
+  img {width: 100%}
+
+  @media (max-width: 767px) {
+    .markdown-body {
+      padding: 15px;
+    }
+  }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://kaityo256.github.io/python_zero/github-markdown.css" type="text/css" />
+  <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML-full" type="text/javascript"></script>
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+<link href="https://use.fontawesome.com/releases/v5.6.1/css/all.css" rel="stylesheet">
+</head>
+<body>
+<article class="markdown-body">
+<h1 id="大名行列をtucker分解してみる">大名行列をTucker分解してみる</h1>
+<h2 id="はじめに">はじめに</h2>
+<p>線形代数には、特異値分解という操作があり、行列の近似に使われています。詳しくは前記事「<a href="https://qiita.com/kaityo256/items/78b16c58228e131f8144">大名行列を特異値分解してみる</a>」を参照してください。</p>
+<p>さて、行列はプログラムで言えば二次元配列のようなものです。二次元配列はインデックスを二つ指定すれば値を得ることができます。同様に行列も行と列の二つのインデックスを指定することで要素を指定することができます。行列を多次元配列に拡張したものがテンソルです。真面目にテンソルを議論するといろいろ面倒ですが、本稿では単に「多次元配列のこと」と思っておいて問題ありません。</p>
+<p>さて、行列と同様に、テンソルも近似したいというニーズがあります。行列の場合は特異値分解が(フロベニウスノルムの意味で)最良近似でしたが、一般のテンソルをどのように近似すれば良いのかは良く分かっていません<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>。テンソルを、小さなテンソル(コアテンソル)と、各モードに対応した行列の組にばらす分解をTucker分解と呼びます。前記事ではモノクロ画像をそのまま行列だと思って特異値分解しましたが、本稿ではカラー画像を三階のテンソルだと思ってTucker分解してみます。Tucker分解を得るアルゴリズムはいくつか提案されていますが、本稿では一番簡単なHigher Order SVD (HOSVD)という、特異値分解を素直に利用したアルゴリズムを紹介します。</p>
+<p>TODO: コードをGitHubに上げる</p>
+<h2 id="tucker分解">Tucker分解</h2>
+<p>Tucker分解について説明する前に、本稿で用いる用語や行列やテンソルのグラフ表現についてまとめておきます<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>。行列やテンソルのインデックスを「足」と呼びます。行列は足を二本持っています。この行や列の数を足の「次元」と呼びます。多次元配列では「足の数」を次元と呼びますが、行列やテンソルは「インデックスの取りえる値の種類」を次元と呼ぶので注意してください。</p>
+<p>行列やテンソルを「線」が生えた「四角」で表現します。「線」が足です。行列は足が二本、三階のテンソルは足が三本生えています。それぞれの足の次元を明示したい時にはその近くに書くことにしましょう。</p>
+<p>さて、グラフ表現で最も大事なのは、線を結ぶ操作です。行列は、同じ次元を持った足について和を取ることで新しい行列を作ることができます。例えば行列は、m行n列の行列とn行l列の行列の行列積を取ることができて、m行l列の行列ができます。これを四角と線で表現するとこんな感じになります。</p>
+<div class="figure">
+<img src="fig/image0.png" alt="image0.png" />
+<p class="caption">image0.png</p>
+</div>
+<p>テンソルでも、同じ次元を持つ足について和を取ることで、その足を潰して新しいテンソルを作ることができます。グラフ表現では、行列と同様に足を結びます。その結果得られるテンソルは、残りの足の本数を階数とし、それぞれの足の次元を持つテンソルです。</p>
+<p>さて、カラー画像のデータは、高さ、幅、色の3つのインデックスを持つ3次元配列で表現できます。これを3本の足を持つテンソルだと思って、特異値分解により近似してみましょう。一般にTucker分解では全ての足について近似しますが、今回は「色」の足の次元が3しかないので、「高さ」と「幅」の足だけ近似することにします。</p>
+<div class="figure">
+<img src="fig/image1.png" alt="image1.png" />
+<p class="caption">image1.png</p>
+</div>
+<p>もともと高さh、幅w、色cの三つの足を持つテンソルを、テンソル一つと行列2つの積にバラしています。中央のテンソルは「コアテンソル」と呼ばれ、今回のケースでは色の足と、左右の行列に次元rでつながる足を持っています。左右の行列はそれぞれ高さhの足と次元rの足、幅wの足と次元rの足を持っており、rが「情報を伝える」足になっています。このrの次元を削減することで、情報を圧縮するのがTucker分解です。以下、それを試してみましょう。</p>
+<h2 id="大名行列のイメージを作る">大名行列のイメージを作る</h2>
+<p>まずは対象となる大名行列のイメージを作りましょう。前回はモノクロで作りましたが、今回はカラーイメージを作ります。近似による色の「にじみ」がわかりやすいように、4つの文字を、それぞれ黄色(R,G,0)、シアン(0,G,B)、マゼンタ(R,0,B)、白(R,G,B)で色をつけましょう。こんな感じでしょうか。途中でGoogle Colab用にフォントをインストールし、フォントのパスを指定していますが、他の環境を使う場合は適宜修正してください。</p>
+<div class="sourceCode"><pre class="sourceCode py"><code class="sourceCode python"><span class="im">from</span> PIL <span class="im">import</span> Image, ImageDraw, ImageFont
+<span class="im">import</span> numpy <span class="im">as</span> np
+<span class="im">from</span> scipy <span class="im">import</span> linalg
+<span class="im">from</span> IPython.display <span class="im">import</span> display
+<span class="op">!</span>apt<span class="op">-</span>get <span class="op">-</span>y install fonts<span class="op">-</span>ipafont<span class="op">-</span>gothic
+fpath<span class="op">=</span><span class="st">&#39;/usr/share/fonts/opentype/ipafont-gothic/ipagp.ttf&#39;</span>
+fontsize <span class="op">=</span> <span class="dv">50</span>
+font <span class="op">=</span> ImageFont.truetype(fpath, fontsize)
+LX <span class="op">=</span> <span class="dv">200</span>
+LY <span class="op">=</span> fontsize
+img  <span class="op">=</span> Image.new(<span class="st">&#39;RGB&#39;</span>, (LX,LY),color<span class="op">=</span><span class="st">&quot;black&quot;</span>)
+draw <span class="op">=</span> ImageDraw.Draw(img)
+draw.text((<span class="dv">0</span>,<span class="dv">0</span>), <span class="st">&quot;大　　　&quot;</span>, fill<span class="op">=</span>(<span class="dv">255</span>,<span class="dv">255</span>,<span class="dv">0</span>), font<span class="op">=</span>font)
+draw.text((<span class="dv">0</span>,<span class="dv">0</span>), <span class="st">&quot;　名　　&quot;</span>, fill<span class="op">=</span>(<span class="dv">0</span>,<span class="dv">255</span>,<span class="dv">255</span>), font<span class="op">=</span>font)
+draw.text((<span class="dv">0</span>,<span class="dv">0</span>), <span class="st">&quot;　　行　&quot;</span>, fill<span class="op">=</span>(<span class="dv">255</span>,<span class="dv">0</span>,<span class="dv">255</span>), font<span class="op">=</span>font)
+draw.text((<span class="dv">0</span>,<span class="dv">0</span>), <span class="st">&quot;　　　列&quot;</span>, fill<span class="op">=</span><span class="st">&quot;white&quot;</span>, font<span class="op">=</span>font)
+img</code></pre></div>
+<p>実行するとこんなイメージが作られます。</p>
+<div class="figure">
+<img src="fig/image2.png" alt="image2.png" />
+<p class="caption">image2.png</p>
+</div>
+<p>イメージからデータを取得しましょう。</p>
+<div class="sourceCode"><pre class="sourceCode py"><code class="sourceCode python">data <span class="op">=</span> np.array(img.getdata()).reshape(LY,LX,<span class="dv">3</span>)</code></pre></div>
+<p><code>data</code>は3次元配列であり、足が三本で、それぞれ高さLY、幅LX、色3つの次元を持つテンソルだと思うことができます。これを近似しましょう、というのが本稿の課題です。その前に、RGBプレーンそれぞれを見てみましょう。</p>
+<div class="sourceCode"><pre class="sourceCode py"><code class="sourceCode python">R <span class="op">=</span> data[:,:,<span class="dv">0</span>]
+G <span class="op">=</span> data[:,:,<span class="dv">1</span>]
+B <span class="op">=</span> data[:,:,<span class="dv">2</span>]
+display(image.fromarray(np.uint8(R)))
+display(image.fromarray(np.uint8(G)))
+display(image.fromarray(np.uint8(B)))</code></pre></div>
+<div class="figure">
+<img src="fig/image3.png" alt="image3.png" />
+<p class="caption">image3.png</p>
+</div>
+<p>Rだけの世界、Gだけの世界、Bだけの世界を見ると、それぞれ文字が一文字ずつ欠けます。また、「列」は白なので欠けません。</p>
+<h2 id="特異値分解">特異値分解</h2>
+<p>まずは特異値分解をする関数を作っておきましょう。詳細は前記事を参照してください。行列を受け取り、指定のランクで近似した二つの行列を返す関数はこんな感じにかけるでしょう。</p>
+<div class="sourceCode"><pre class="sourceCode py"><code class="sourceCode python"><span class="kw">def</span> perform_svd(X, rank):
+  U, s, V <span class="op">=</span> linalg.svd(X)
+  Ur <span class="op">=</span> U[:, :rank]
+  Sr <span class="op">=</span> np.diag(np.sqrt(s[:rank]))
+  Vr <span class="op">=</span> V[:rank, :]
+  A <span class="op">=</span> Ur <span class="op">@</span> Sr
+  B <span class="op">=</span> Sr <span class="op">@</span> Vr
+  <span class="cf">return</span> A, B</code></pre></div>
+<p>行列<code>X</code>を突っ込むと、二つの行列<code>A,B</code>が返ってきます。<code>A @ B</code>を計算すると、<code>rank</code>で低ランク近似された<code>X</code>を得ることができます。</p>
+<h2 id="テンソルの近似">テンソルの近似</h2>
+<p>ではいよいよテンソルを近似しますが、せっかくなのでいろいろな近似方法を試してみましょう。</p>
+<h2 id="無理やり行列だと思って特異値分解">無理やり行列だと思って特異値分解</h2>
+<p>今回のテンソルは高さ50、幅200、色3のテンソルになっています。要素数は30000個です。これを、元の構造を全く無視して、200*150の行列だと思って特異値分解し、近似してみましょう。こんな関数になるでしょうか。</p>
+<div class="sourceCode"><pre class="sourceCode py"><code class="sourceCode python"><span class="kw">def</span> simple_image(X, rank):
+  X <span class="op">=</span> data.reshape((<span class="dv">200</span>,<span class="dv">150</span>))
+  A, B <span class="op">=</span> perform_svd(X, rank)
+  Y <span class="op">=</span> (A <span class="op">@</span> B).reshape(LY,LX,<span class="dv">3</span>)
+  Y <span class="op">=</span> np.clip(Y, <span class="dv">0</span>, <span class="dv">255</span>)
+  Y <span class="op">=</span> np.uint8(Y)
+  <span class="bu">print</span>((A.size<span class="op">+</span>B.size)<span class="op">/</span>X.size)
+  <span class="cf">return</span> Image.fromarray(Y)</code></pre></div>
+<p>実行結果はこんな感じです。</p>
+<div class="sourceCode"><pre class="sourceCode py"><code class="sourceCode python">display(simple_image(data, <span class="dv">50</span>))
+display(simple_image(data, <span class="dv">21</span>))
+display(simple_image(data, <span class="dv">8</span>))</code></pre></div>
+<div class="figure">
+<img src="fig/image4.png" alt="image4.png" />
+<p class="caption">image4.png</p>
+</div>
+<p>データの圧縮率も表示しています。上から58.3%、24.5%、9.3%です。これは、200*150の行列Xを二つの行列A,Bにバラした時、AとBの要素数の和を、Xの要素数で割ったものです。すごく乱暴な方法なわりには、それなりに元の構造が残っています。</p>
+<h2 id="rgbプレーンを特異値分解">RGBプレーンを特異値分解</h2>
+<p>先の方法では、もともと高さ、幅、色という3つの構造を全く無視していました。次は元の構造を少し考慮してみましょう。カラーイメージを表現するテンソルを近似する方法として単純に思いつくのは、R,G,Bプレーンをそれぞれ「行列」だと思って特異値分解し、また合成する方法です。やってみましょう。</p>
+<div class="sourceCode"><pre class="sourceCode py"><code class="sourceCode python"><span class="kw">def</span> rgb_svd(X, rank):
+  R <span class="op">=</span> X[:,:,<span class="dv">0</span>]
+  G <span class="op">=</span> X[:,:,<span class="dv">1</span>]
+  B <span class="op">=</span> X[:,:,<span class="dv">2</span>]
+  Rh, Rw <span class="op">=</span> perform_svd(R, rank)
+  Gh, Gw <span class="op">=</span> perform_svd(G, rank)
+  Bh, Bw <span class="op">=</span> perform_svd(B, rank)
+  <span class="cf">return</span> Rh, Rw, Gh, Gw, Bh, Bw</code></pre></div>
+<p>テンソル<code>X</code>をRGBプレーンを表す行列にばらし、それぞれRをRhとRw、GをGhとGw、BをBhとBwにバラして返しています。<code>Rh @ Rw</code>とするとRプレーンが復元されるので、同様にG、Bプレーンを復元すると、元のイメージが復元されます。イメージの復元はこんな感じになるでしょう。</p>
+<div class="sourceCode"><pre class="sourceCode py"><code class="sourceCode python"><span class="kw">def</span> rgb_image(X, rank):
+  Rh, Rw, Gh, Gw, Bh, Bw <span class="op">=</span> rgb_svd(X, rank)
+  R <span class="op">=</span> Rh <span class="op">@</span> Rw
+  G <span class="op">=</span> Gh <span class="op">@</span> Gw
+  B <span class="op">=</span> Bh <span class="op">@</span> Bw
+  Y <span class="op">=</span> np.asarray([R,G,B]).transpose(<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">0</span>)
+  Y <span class="op">=</span> np.clip(Y, <span class="dv">0</span>, <span class="dv">255</span>)
+  Y <span class="op">=</span> np.uint8(Y)
+  <span class="bu">print</span>((Rh.size<span class="op">+</span>Rw.size)<span class="op">*</span><span class="dv">3</span><span class="op">/</span>X.size)
+  <span class="cf">return</span> Image.fromarray(Y)</code></pre></div>
+<p>実行してみましょう。</p>
+<div class="sourceCode"><pre class="sourceCode py"><code class="sourceCode python">display(rgb_image(data, <span class="dv">50</span>))
+display(rgb_image(data, <span class="dv">10</span>))
+display(rgb_image(data, <span class="dv">4</span>))</code></pre></div>
+<div class="figure">
+<img src="fig/image5.png" alt="image5.png" />
+<p class="caption">image5.png</p>
+</div>
+<p>圧縮率は上から125%、25%、10%です。特異値分解は、残すランクの値が大きいと、元のデータより要素数が多くなることがあります。残り二つは先ほどの乱暴な方法と圧縮率を揃えてみました。構造を考慮しているので近似が良くなるかと思いましたが、意外に悪かったですね。</p>
+<h2 id="tucker分解-1">Tucker分解</h2>
+<p>ではいよいよ本題のTucker分解をしてみましょう。Tucker分解の原理については<a href="https://qiita.com/kaityo256/items/0e8438c6c05897dadc2c">Tucker分解による画像の低ランク近似</a>も参照してください。3本足のテンソル<code>X</code>を、コアテンソル<code>C</code>と、左右の行列<code>U</code>と<code>V</code>にばらす関数です。</p>
+<div class="sourceCode"><pre class="sourceCode py"><code class="sourceCode python"><span class="kw">def</span> tucker_decomposition(X, rank):
+  X <span class="op">=</span> X.transpose(<span class="dv">0</span>,<span class="dv">2</span>,<span class="dv">1</span>)
+  XR <span class="op">=</span> X.reshape(LY<span class="op">*</span><span class="dv">3</span>, LX)
+  _, _, V <span class="op">=</span> linalg.svd(XR)
+  V <span class="op">=</span> V[:rank,:]
+  Vt <span class="op">=</span> V.transpose(<span class="dv">1</span>,<span class="dv">0</span>)
+  XL <span class="op">=</span> X.reshape(LY, LX<span class="op">*</span><span class="dv">3</span>)
+  U, _, _ <span class="op">=</span> linalg.svd(XL)
+  U <span class="op">=</span> U[:,:rank]
+  Ut <span class="op">=</span> U.transpose(<span class="dv">1</span>,<span class="dv">0</span>)
+  <span class="co"># Make a core tensor</span>
+  UX <span class="op">=</span> np.tensordot(Ut, X, (<span class="dv">1</span>,<span class="dv">0</span>))
+  C <span class="op">=</span> np.tensordot(UX, Vt, (<span class="dv">2</span>, <span class="dv">0</span>))
+  <span class="cf">return</span> U, C, V</code></pre></div>
+<p>ばらした行列とテンソルからイメージを復元する関数はこんな感じになります。</p>
+<div class="sourceCode"><pre class="sourceCode py"><code class="sourceCode python"><span class="kw">def</span> tucker_image(X, rank):
+  U, C, V <span class="op">=</span> tucker_decomposition(X, rank)
+  UC <span class="op">=</span> np.tensordot(U,C,(<span class="dv">1</span>,<span class="dv">0</span>))
+  Y <span class="op">=</span> np.tensordot(UC, V, (<span class="dv">2</span>,<span class="dv">0</span>))
+  Y <span class="op">=</span> Y.transpose((<span class="dv">0</span>,<span class="dv">2</span>,<span class="dv">1</span>))
+  Y <span class="op">=</span> np.clip(Y, <span class="dv">0</span>, <span class="dv">255</span>)
+  Y <span class="op">=</span> np.uint8(Y)
+  <span class="bu">print</span>((U.size<span class="op">+</span>C.size<span class="op">+</span>V.size)<span class="op">/</span>X.size)
+  <span class="cf">return</span> Image.fromarray(Y)</code></pre></div>
+<p>実行してみましょう。</p>
+<div class="sourceCode"><pre class="sourceCode py"><code class="sourceCode python">display(tucker_image(data, <span class="dv">50</span>))
+display(tucker_image(data, <span class="dv">23</span>))
+display(tucker_image(data, <span class="dv">10</span>))</code></pre></div>
+<div class="figure">
+<img src="fig/image6.png" alt="image6.png" />
+<p class="caption">image6.png</p>
+</div>
+<p>圧縮率は上から66.7%、24.5%、9.3%です。RGBそれぞれ特異値分解するよりは明らかに良いですが、乱暴な方法との比較は微妙かな、という感じでしょうか。</p>
+<h2 id="まとめ">まとめ</h2>
+<p>カラーの「大名行列」のイメージを3本足のテンソルだと思って、特異値分解を使って情報を圧縮してみました。RGBプレーンそれぞれを特異値分解するより、全体を無理やり特異値分解してしまう方が良さそうなのは意外でした。行列の場合と異なり、テンソルの近似は「どうするのが良いか」があまり自明ではありません。このコードを試してみて、「なるほどテンソルの低ランク近似は奥が深いなぁ」と思ってもらえれば幸いです。</p>
+<h2 id="補足資料">補足資料</h2>
+<h2 id="tucker分解とは">Tucker分解とは</h2>
+<p>Tucker分解とは、テンソルを「コアテンソル」と呼ばれる小さなテンソルと、各足に接続する行列に分解することです。これが何をやっているかを理解するために、まずは特異値分解を用いた行列の近似について見てみましょう。</p>
+<p>もともとm行n列の行列<span class="math inline">\(X\)</span>があったとします。これを特異値分解して<span class="math inline">\(X = U \Sigma V^\dagger\)</span>としましょう。ここで、<span class="math inline">\(L = U \Sigma\)</span>、<span class="math inline">\(R=V^\dagger\)</span>とすると、<span class="math inline">\(X=LR\)</span>です。この変換は可逆ですから、何ら情報は失われていません。これをグラフ表現するとこんな感じです。</p>
+<div class="figure">
+<img src="fig/image7.png" alt="image7.png" />
+<p class="caption">image7.png</p>
+</div>
+<p>もともとm次元とn次元の足が二本だけあった行列ですが、中央にもう一本n次元の線が入りました。この線は「バーチャルボンド」と呼ばれ、「一方からもう一方へ情報を伝える線」だと解釈できます。このボンドの次元は<span class="math inline">\(n\)</span>で、全ての情報を伝えています。さて、特異値のうちr個だけ使って、元の行列をm行r列の行列<span class="math inline">\(\tilde{L}\)</span>と、r行m列の行列<span class="math inline">\(\tilde{R}\)</span>の積で表現しましょう。グラフ表現するとこんな感じです。</p>
+<div class="figure">
+<img src="fig/image8.png" alt="image8.png" />
+<p class="caption">image8.png</p>
+</div>
+<p>元の行列は次元mのボンドで全ての情報を伝えていましたが、その次元をrに絞ることで行列<span class="math inline">\(X\)</span>が<span class="math inline">\(\tilde{X}=\tilde{L}\tilde{R}\)</span>と近似されました。</p>
+<p>元の行列は、片方の足からもう片方の足にバーチャルボンドが全ての情報を伝えていました。ところが、特異値の分解により、ランク<span class="math inline">\(r\)</span>の低ランク近似をすると、次元<span class="math inline">\(m\)</span>のボンドだったバーチャルボンドが次元<span class="math inline">\(r\)</span>という細い線になりました。つまり、途中の情報を「絞る」ことで近似していると解釈できます。</p>
+<p>さて、行列もテンソルですから、Tucker分解できます。Tucker分解は足ごとに異なる次元で近似できますが、簡単のためにm行n列の行列の二つの足をどちらも<span class="math inline">\(r\)</span>で近似しましょう。こんな形になります。</p>
+<div class="figure">
+<img src="fig/image9.png" alt="image9.png" />
+<p class="caption">image9.png</p>
+</div>
+<p>先程は、mn個のデータ(行列要素)がr(m+n)個になったのに対して、Tucker分解の場合はr(m+n+r)個になったため、データ数が増えてしまっています。これは2階のテンソルである行列をTucker分解しているためで、高階のテンソルをTucker分解すると非常にデータ数が非常に小さくなります。例えば、それぞれd次元の足を持つ4階のテンソルを、rで絞ったTucker分解だと、もともと<span class="math inline">\(d^4\)</span>の要素数だったのが<span class="math inline">\(4dr+r^4\)</span>まで落ちます。<span class="math inline">\(d=10\)</span>、<span class="math inline">\(r=5\)</span>なら8.25%までデータを圧縮することができます。</p>
+<div class="figure">
+<img src="fig/image10.png" alt="image10.png" />
+<p class="caption">image10.png</p>
+</div>
+<p>さて、Tucker分解は、もとのテンソルと同じ形をしたコアテンソルのそれぞれの足に行列をつけたような形をしています。コアテンソルの足は細く、コアテンソルの足にくっつく行列は、その足を太くします。このコアテンソルと行列をどのように求めるか？というのが問題となります。</p>
+<h2 id="hosvd">HOSVD</h2>
+<p>Tucker分解を得る簡単な方法の一つが、本稿で述べたHOSVD (Higher-order SVD)という手法です。HOSVDは高階テンソルを分解するための手法ですが、まずは行列に適用してみましょう。</p>
+<p>まず、m行n列の行列<span class="math inline">\(X\)</span>をSVDで分解すると、<span class="math inline">\(X=U\Sigma V^\dagger\)</span>を得ます。<span class="math inline">\(U\Sigma=L\)</span>とすると、<span class="math inline">\(X=LV^\dagger\)</span>と分解できたことになります。さて、特異値分解の定義から<span class="math inline">\(V\)</span>はユニタリ行列なので<span class="math inline">\(V^\dagger V = I\)</span>です。したがって、<span class="math inline">\(X=LV^\dagger\)</span>の両辺に左から<span class="math inline">\(V\)</span>をかけると、<span class="math inline">\(L=XV\)</span>を得ます。</p>
+<div class="figure">
+<img src="fig/image11.png" alt="image11.png" />
+<p class="caption">image11.png</p>
+</div>
+<p>つまり、<span class="math inline">\(X=L V^\dagger\)</span>と分解できる時、<span class="math inline">\(V\)</span>は<span class="math inline">\(X\)</span>から<span class="math inline">\(L\)</span>を取り出す演算子であると理解できます。</p>
+<p>さて、<span class="math inline">\(X=L V^\dagger\)</span> と分解した後にランク<span class="math inline">\(r\)</span>で低ランク近似をするためには、<span class="math inline">\(L\)</span>の左から<span class="math inline">\(r\)</span>列だけ取り出した行列<span class="math inline">\(\tilde{L}\)</span>と、<span class="math inline">\(V^\dagger\)</span>の上から<span class="math inline">\(r\)</span>行だけ取り出した行列<span class="math inline">\(\tilde{V}^\dagger\)</span>の積として<span class="math inline">\(\tilde{X}=\tilde{L} \tilde{V}^\dagger\)</span>を作るのでした。</p>
+<div class="figure">
+<img src="fig/image12.png" alt="image12.png" />
+<p class="caption">image12.png</p>
+</div>
+<p>ここで、<span class="math inline">\(L=XV\)</span>であったことと、<span class="math inline">\(V^\dagger\)</span>がユニタリ行列であったことを考慮すると、<span class="math inline">\(V\)</span>の左から<span class="math inline">\(r\)</span>列をとった行列<span class="math inline">\(\tilde{V}\)</span>を使って、<span class="math inline">\(\tilde{L}=X\tilde{V}\)</span>として、<span class="math inline">\(X\)</span>から<span class="math inline">\(\tilde{L}\)</span>を取り出すことができることがわかります。</p>
+<div class="figure">
+<img src="fig/image13.png" alt="image13.png" />
+<p class="caption">image13.png</p>
+</div>
+<p><span class="math inline">\(\tilde{L}=X\tilde{V}\)</span>を使って<span class="math inline">\(\tilde{X}=\tilde{L} \tilde{V}^\dagger\)</span>を書き直すと、<span class="math inline">\(\tilde{X}=X \tilde{V} \tilde{V}^\dagger\)</span>となります。これを図示するとこんな感じです。</p>
+<div class="figure">
+<img src="fig/image14.png" alt="image14.png" />
+<p class="caption">image14.png</p>
+</div>
+<p>これを見ると、もともと<span class="math inline">\(n\)</span>の次元を持っていた<span class="math inline">\(X\)</span>の右の足を<span class="math inline">\(\tilde{V}\)</span>を使って次元<span class="math inline">\(r\)</span>に落とし、それを<span class="math inline">\(\tilde{V}^\dagger\)</span>によりまた<span class="math inline">\(n\)</span>の次元に戻しているように見えます。<span class="math inline">\(\tilde{V}\)</span>が情報を圧縮し、<span class="math inline">\(\tilde{V}^\dagger\)</span>が復元しているので、それぞれ圧縮行列、復元行列と呼びましょう。</p>
+<p>さて、<span class="math inline">\(\tilde{V}\)</span>は右の足の次元を落とす行列ですが、全く同様にして左の足の次元を落とす圧縮行列<span class="math inline">\(\tilde{U}^\dagger\)</span>を考えることができます。作り方は<span class="math inline">\(\tilde{V}\)</span>と同様です。元の行列<span class="math inline">\(X\)</span>に、右から右の圧縮行列<span class="math inline">\(\tilde{U}^\dagger\)</span>を、左から左の圧縮行列<span class="math inline">\(\tilde{V}\)</span>をかけると、r行r列の小さな行列<span class="math inline">\(C\)</span>になります。これがTucker分解におけるコアテンソルになります。</p>
+<div class="figure">
+<img src="fig/image15.png" alt="image15.png" />
+<p class="caption">image15.png</p>
+</div>
+<p>特異値分解の様子と、HOSVDの関係を描くとこんな感じになります。</p>
+<div class="figure">
+<img src="fig/image16.png" alt="image16.png" />
+<p class="caption">image16.png</p>
+</div>
+<p>特異値分解で得られる<span class="math inline">\(U\)</span>や<span class="math inline">\(V^\dagger\)</span>はユニタリ行列ですから、<span class="math inline">\(U U^\dagger = VV^\dagger=I\)</span>です。この<span class="math inline">\(U U^\dagger\)</span>の間の線を細くすることで近似をするのがHOSVDです。コアテンソルは、それぞれの足に「圧縮行列」をかけることで得ることができます。元のテンソルを近似するには、コアテンソルのそれぞれの足に「復元行列」をかければ良いことがわかります。</p>
+<h2 id="カラーイメージのtucker分解">カラーイメージのTucker分解</h2>
+<p>Tucker分解は元のテンソルのそれぞれの足に圧縮行列をかけることでコアテンソルを作り、コアテンソルのそれぞれの足に復元行列をかけることで近似テンソルを作る手法です。本稿ではカラーイメージを高さ、幅、色の3つの足を持つテンソルとしてTucker分解していますが、色の足は次元が3しかないので、そこはそのままにして、高さの足と幅の足に対応する圧縮、復元行列を作っています。</p>
+<p>まず、幅の足(次元w)に対応する圧縮行列を作りましょう。そのために高さの足(次元h)と、色の足(次元c)をまとめて、hc行w列の行列とみなします。プログラムでは、もともと足が(h, w, c)の順番に並んでいたのを、<code>transpose</code>により(h,c,w)の順番に変え、(h*c, w)の形に<code>reshape</code>していることに対応します。</p>
+<p>この後、特異値分解により<span class="math inline">\(X = L W^t\)</span>を得ます(<span class="math inline">\(W\)</span>は実行列なので随伴行列は転置になります)。先ほどと同様な議論から<span class="math inline">\(L=XW\)</span>ですから、<span class="math inline">\(X=X W W^\dagger\)</span>です。そして、<span class="math inline">\(W W^\dagger\)</span>の間のボンドを「絞る」ことで低ランク近似をします。これにより、幅の足に作用する圧縮行列<span class="math inline">\(\tilde{W}\)</span>を得ます。</p>
+<div class="figure">
+<img src="fig/image17.png" alt="image17.png" />
+<p class="caption">image17.png</p>
+</div>
+<p>全く同様な手続きにより、高さの足に作用する圧縮行列<span class="math inline">\(H^t\)</span>を得ます。これを元のテンソル<span class="math inline">\(X\)</span>にかければコアテンソル<span class="math inline">\(C\)</span>の出来上がりです。さらに、コアテンソルのそれぞれの足に復元行列をかければ近似テンソル<span class="math inline">\(\tilde{X}\)</span>ができます。</p>
+<div class="figure">
+<img src="fig/image18.png" alt="image18.png" />
+<p class="caption">image18.png</p>
+</div>
+<p>等式の両辺で「外に出ている足」の次元が一致していることを確認してください。圧縮行列と復元行列はお互いに転置の関係にあります。</p>
+<p>まとめると、HOSVDとは</p>
+<ol style="list-style-type: decimal">
+<li>注目する足以外を全てまとめる(transpose, reshape)</li>
+<li>注目する足とそれ以外の足の行列だと思って特異値分解する</li>
+<li>注目する足に対応する圧縮行列、復元行列を得る</li>
+<li>以上の処理を全ての足について行う</li>
+<li>元のテンソルの全ての足に圧縮行列をかけたものがコアテンソルになる</li>
+<li>コアテンソルの全ての足に復元行列をかけたものが近似テンソルになる</li>
+</ol>
+<p>という手法になります。情報圧縮の手段として見ると、保存するべき情報はコアテンソルと全ての復元行列のみです。絞る次元を固定すると、元のテンソルの足の本数(階数)が多いほど強力に圧縮できますが、復元した時にどのくらい良い近似になるかは元のテンソルの性質に依存します。</p>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>もしかしたら一般論があるのかもしれませんが、筆者は知りません。<a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p>あまり詳しくないので、以下は業界標準ではない表記方法があるかもしれないのでご注意ください。<a href="#fnref2">↩</a></p></li>
+</ol>
+</div>
+</article>
+</body>
+</html>
